@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
-const genId = () => nanoid(16);
+export const genId = () => nanoid(16);
 
 export const db = new PrismaClient({
   log: ['error', 'query', 'info', 'warn'],
