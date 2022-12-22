@@ -10,7 +10,7 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    queueSubmissionGeneration(count: Int!): Boolean!
+    queueSubmissionGeneration(count: Int): Boolean!
   }
 
   type Submission {
