@@ -12,22 +12,26 @@ const db = new PrismaClient({
 const seedDatabase = async () => {
   console.log('Seeding database...');
 
-  const postsCount = await db.post.count();
+  const submissionCount = await db.submission.count();
 
-  if (postsCount === 0) {
-    await db.post.createMany({
+  if (submissionCount === 0) {
+    await db.submission.createMany({
       data: [
         {
           id: genId(),
-          slug: 'ulti-node',
-          title: 'ulti-node',
-          content: 'ulti-node',
-          publishedAt: new Date(),
+          submittedAt: new Date(),
+          data: {
+            name: 'Zomer',
+            twitter: 'zomeru',
+          },
         },
         {
           id: genId(),
-          slug: 'ulti-react',
-          title: 'ulti-react',
+          submittedAt: new Date(),
+          data: {
+            name: 'John Doe',
+            twitter: 'john_doe',
+          },
         },
       ],
     });
@@ -41,9 +45,9 @@ const app = express();
 app.use(morgan('dev'));
 
 app.get('/', async (req, res) => {
-  const posts = await db.post.findMany();
+  const submissions = await db.submission.findMany();
 
-  res.json(posts);
+  res.json(submissions);
 });
 
 const port = Number(process.env.PORT) || 8080;
