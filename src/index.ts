@@ -1,57 +1,52 @@
+import { ApolloServer } from '@apollo/server';
+import { expressMiddleware } from '@apollo/server/express4';
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import express from 'express';
+import cors from 'cors';
+import { json } from 'body-parser';
+import http from 'http';
 import morgan from 'morgan';
-import { PrismaClient } from '@prisma/client';
-import { nanoid } from 'nanoid';
 
-const genId = () => nanoid(16);
+import { typeDefs, resolvers } from './graphql';
+import { seedDatabase } from './utils';
 
-const db = new PrismaClient({
-  log: ['error', 'query', 'info', 'warn'],
-});
+const main = async () => {
+  const app = express();
 
-const seedDatabase = async () => {
-  console.log('Seeding database...');
+  seedDatabase();
 
-  const submissionCount = await db.submission.count();
+  app.use(morgan('dev'));
 
-  if (submissionCount === 0) {
-    await db.submission.createMany({
-      data: [
-        {
-          id: genId(),
-          submittedAt: new Date(),
-          data: {
-            name: 'Zomer',
-            twitter: 'zomeru',
-          },
-        },
-        {
-          id: genId(),
-          submittedAt: new Date(),
-          data: {
-            name: 'John Doe',
-            twitter: 'john_doe',
-          },
-        },
-      ],
-    });
-    console.log('Database seeded.');
-  }
+  const httpServer = http.createServer(app);
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+  });
+
+  await server.start();
+
+  app.use(
+    '/graphql',
+    cors<cors.CorsRequest>(),
+    json(),
+    expressMiddleware(server)
+    // expressMiddleware(server, {
+    //   context: async () => {
+    //     return {
+    //       db,
+    //     };
+    //   },
+    // })
+  );
+
+  const port = Number(process.env.PORT) || 8080;
+  const host = '0.0.0.0';
+
+  await new Promise<void>((resolve) =>
+    httpServer.listen({ host, port }, resolve)
+  );
+  console.log(`🚀 Server ready at http://localhost:${port}/graphql`);
 };
-seedDatabase();
 
-const app = express();
-
-app.use(morgan('dev'));
-
-app.get('/', async (req, res) => {
-  const submissions = await db.submission.findMany();
-
-  res.json(submissions);
-});
-
-const port = Number(process.env.PORT) || 8080;
-
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server is listening on port ${port}`);
-});
+main();
